@@ -1,0 +1,5 @@
+# pg_iot16 extension
+comment = 'insert-only table AM '
+default_version = '0.0.1'
+module_pathname = '$libdir/pg_iot16'
+relocatable = true
