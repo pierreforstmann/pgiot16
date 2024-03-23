@@ -31,7 +31,6 @@ SELECT * FROM pg_iot16_tab;
 --
 create table t(c int) using pg_iot16;
 create index i on t(c);
-ERROR:  only heap AM is supported
 insert into t select generate_series(1, 1000000);
 delete from t;
 ERROR:  pg_iot16: pgiot16_tuple_delete: cannot DELETE from an pgiot16 table

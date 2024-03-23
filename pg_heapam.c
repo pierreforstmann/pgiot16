@@ -1122,10 +1122,15 @@ HeapTuple __attribute__((visibility("default")))  pgi_heap_getnext(TableScanDesc
       * rather than the AM oid, is that this allows to write regression tests
       * that create another AM reusing the heap handler.
       */
-     if (unlikely(sscan->rs_rd->rd_tableam != GetHeapamTableAmRoutine()))
-         ereport(ERROR,
-                 (errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-                  errmsg_internal("only heap AM is supported")));
+
+     /*
+      * bypass check for pg_iot16
+      *
+      * if (unlikely(sscan->rs_rd->rd_tableam != GetHeapamTableAmRoutine()))
+      *   ereport(ERROR,
+      *           (errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+      *            errmsg_internal("only heap AM is supported")));
+      */
   
      /*
       * We don't expect direct calls to heap_getnext with valid CheckXidAlive
