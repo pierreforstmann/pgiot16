@@ -1106,8 +1106,12 @@ heap_endscan(TableScanDesc sscan)
 
 /*
  * heap_getnext renamed to pgi_heap_getnext
+ *
+ * use __attribute__((visibility("default"))) to avoid run-time error
+ * "undefined symbol: pgi_heap_getnext" due to new gcc option
+ * -fvisibility=hidden.
  */
-HeapTuple pgi_heap_getnext(TableScanDesc sscan, ScanDirection direction)
+HeapTuple __attribute__((visibility("default")))  pgi_heap_getnext(TableScanDesc sscan, ScanDirection direction)
 {
      HeapScanDesc scan = (HeapScanDesc) sscan;
   
