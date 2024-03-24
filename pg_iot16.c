@@ -61,7 +61,7 @@
 #include "commands/tablecmds.h"
 #include "executor/spi.h"
 
-extern HeapTuple pgi_heap_getnext(TableScanDesc sscan, ScanDirection direction);
+extern HeapTuple pg_iot16_heap_getnext(TableScanDesc sscan, ScanDirection direction);
 
 PG_MODULE_MAGIC;
 
@@ -69,16 +69,6 @@ void		_PG_init(void);
 void		_PG_fini(void);
 
 PG_FUNCTION_INFO_V1(pg_iot16_handler);
-
-/* Base structures for scans */
-typedef struct ImmuTableScanDescData
-{
-	TableScanDescData rs_base;	/* AM independent part of the descriptor */
-
-	/* Add more fields here as needed by the AM. */
-}			ImmuTableScanDescData;
-typedef struct ImmuTableScanDescData *ImmuTableScanDesc;
-
 
 /* ------------------------------------------------------------------------
  * Slot related callbacks for pgiot16  AM
@@ -163,13 +153,9 @@ pgiot16_vacuum(Relation onerel, VacuumParams *params,
  * -----------------------------------------------------------------------------------------------------
  */
 
-
 /*
- * From src/backend/access/heap/heapam_handler.c version 15.4
- * sed -n '1978,2015p' /home/pierre/.pgenv/src/postgresql-15.4/src/backend/access/heap/heapam_handler.c
- * renamed heap_getnext to pgi_heap_getnext
+ *  sed -n '1985,2024p' /home/pierre/.pgenv/src/postgresql-16.2/src/backend/access/heap/heapam_handler.c
  */
-
 /*
  * Return the number of blocks that have been read by this scan since
  * starting.  This is meant for progress reporting rather than be fully
@@ -179,47 +165,44 @@ pgiot16_vacuum(Relation onerel, VacuumParams *params,
 static BlockNumber
 heapam_scan_get_blocks_done(HeapScanDesc hscan)
 {
-        ParallelBlockTableScanDesc bpscan = NULL;
-        BlockNumber startblock;
-        BlockNumber blocks_done;
+	ParallelBlockTableScanDesc bpscan = NULL;
+	BlockNumber startblock;
+	BlockNumber blocks_done;
 
-        if (hscan->rs_base.rs_parallel != NULL)
-        {
-                bpscan = (ParallelBlockTableScanDesc) hscan->rs_base.rs_parallel;
-                startblock = bpscan->phs_startblock;
-        }
-        else
-                startblock = hscan->rs_startblock;
+	if (hscan->rs_base.rs_parallel != NULL)
+	{
+		bpscan = (ParallelBlockTableScanDesc) hscan->rs_base.rs_parallel;
+		startblock = bpscan->phs_startblock;
+	}
+	else
+		startblock = hscan->rs_startblock;
 
-        /*
-         * Might have wrapped around the end of the relation, if startblock was
-         * not zero.
-         */
-        if (hscan->rs_cblock > startblock)
-                blocks_done = hscan->rs_cblock - startblock;
-        else
-        {
-                BlockNumber nblocks;
+	/*
+	 * Might have wrapped around the end of the relation, if startblock was
+	 * not zero.
+	 */
+	if (hscan->rs_cblock > startblock)
+		blocks_done = hscan->rs_cblock - startblock;
+	else
+	{
+		BlockNumber nblocks;
 
-                nblocks = bpscan != NULL ? bpscan->phs_nblocks : hscan->rs_nblocks;
-                blocks_done = nblocks - startblock +
-                        hscan->rs_cblock;
-        }
+		nblocks = bpscan != NULL ? bpscan->phs_nblocks : hscan->rs_nblocks;
+		blocks_done = nblocks - startblock +
+			hscan->rs_cblock;
+	}
 
-        return blocks_done;
+	return blocks_done;
 }
 
 
 /*
- * From 
- * src/backend/access/heap/heapam_handler.c version 15.4
- * using: 
- * sed -n '1158,1731p' /home/pierre/.pgenv/src/postgresql-15.4/src/backend/access/heap/heapam_handler.c > table_index_build_scan.c
- * function heapam_index_build_range_scan renamed to pgiot16_index_build_range_scan
+ * sed -n '1169,1742p' /home/pierre/.pgenv/src/postgresql-16.2/src/backend/access/heap/heapam_handler.c
+ *
+ * renamed get_heapnext to pg_iot16_get_heapnext
  */
-
 static double
-pgiot16_index_build_range_scan(Relation heapRelation,
+heapam_index_build_range_scan(Relation heapRelation,
 							  Relation indexRelation,
 							  IndexInfo *indexInfo,
 							  bool allow_sync,
@@ -378,7 +361,7 @@ pgiot16_index_build_range_scan(Relation heapRelation,
 	/*
 	 * Scan all tuples in the base relation.
 	 */
-	while ((heapTuple = pgi_heap_getnext(scan, ForwardScanDirection)) != NULL)
+	while ((heapTuple =pg_iot16_heap_getnext(scan, ForwardScanDirection)) != NULL)
 	{
 		bool		tupleIsAlive;
 
@@ -793,6 +776,7 @@ pgiot16_index_build_range_scan(Relation heapRelation,
 	return reltuples;
 }
 
+
 /* ------------------------------------------------------------------------
  * Definition of the pgiot16 table access methods:
  * - with default heap access methods
@@ -819,7 +803,7 @@ pg_iot16_handler(PG_FUNCTION_ARGS)
 	pgiot16_access_method_struct.pgiot16_methods.relation_nontransactional_truncate = 
 		pgiot16_relation_nontransactional_truncate;
 	pgiot16_access_method_struct.pgiot16_methods.index_build_range_scan =
-	       pgiot16_index_build_range_scan;
+	       heapam_index_build_range_scan;
 
 
 	PG_RETURN_POINTER(&pgiot16_access_method_struct.pgiot16_methods);

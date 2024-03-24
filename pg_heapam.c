@@ -3,13 +3,6 @@
  * pg_heapam.c
  *
  */
-#include "stdio.h"
-#define STR(x)   #x
-#define SHOW_DEFINE(x) printf("%s=%s\n", #x, STR(x))
-static void print_pg_version_num(void)
-{
-	SHOW_DEFINE(PG_VERSION_NUM);	
-}
 
 /*-------------------------------------------------------------------------
  *
@@ -87,7 +80,7 @@ static void print_pg_version_num(void)
 
 PG_MODULE_MAGIC;
 
-HeapTuple pgi_heap_getnext(TableScanDesc sscan, ScanDirection direction);
+HeapTuple pg_iot16_heap_getnext(TableScanDesc sscan, ScanDirection direction);
 
 static HeapTuple heap_prepare_insert(Relation relation, HeapTuple tup,
 									 TransactionId xid, CommandId cid, int options);
@@ -1105,13 +1098,13 @@ heap_endscan(TableScanDesc sscan)
 }
 
 /*
- * heap_getnext renamed to pgi_heap_getnext
+ * heap_getnext renamed to pg_iot16_heap_getnext
  *
  * use __attribute__((visibility("default"))) to avoid run-time error
  * "undefined symbol: pgi_heap_getnext" due to new gcc option
  * -fvisibility=hidden.
  */
-HeapTuple __attribute__((visibility("default")))  pgi_heap_getnext(TableScanDesc sscan, ScanDirection direction)
+HeapTuple __attribute__((visibility("default")))  pg_iot16_heap_getnext(TableScanDesc sscan, ScanDirection direction)
 {
      HeapScanDesc scan = (HeapScanDesc) sscan;
   
